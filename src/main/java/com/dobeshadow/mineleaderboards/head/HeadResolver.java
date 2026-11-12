@@ -41,7 +41,8 @@ public final class HeadResolver {
 
     /** 连续下载失败达到该次数后，短时间内不再尝试外网，避免一轮推送卡死。 */
     private static final int FAILURE_THRESHOLD = 3;
-    private static final long CIRCUIT_COOLDOWN_MS = 60_000L;
+    /** 外网不通时冷却 10 分钟，避免每轮推送都白等 3 次超时。 */
+    private static final long CIRCUIT_COOLDOWN_MS = 600_000L;
 
     private final JavaPlugin plugin;
     private final Logger logger;
@@ -144,10 +145,12 @@ public final class HeadResolver {
     }
 
     private void onDownloadFailure() {
-        if (consecutiveFailures.incrementAndGet() >= FAILURE_THRESHOLD) {
+        // 只在刚触发熔断时提示一次，之后静默跳过
+        if (consecutiveFailures.incrementAndGet() == FAILURE_THRESHOLD) {
             circuitOpenUntil = System.currentTimeMillis() + CIRCUIT_COOLDOWN_MS;
             logger.warning("头像服务连续失败 " + FAILURE_THRESHOLD
-                    + " 次，60 秒内跳过外网下载（前端会用自己的头像兜底）");
+                    + " 次，10 分钟内跳过外网下载（前端会用自己的头像兜底）；"
+                    + "若服务器长期无法访问外网，建议把 heads.source 设为 none");
         }
     }
 

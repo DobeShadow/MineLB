@@ -1,5 +1,5 @@
 name: MineLeaderboards
-version: '1.0.1'
+version: '1.0.2'
 main: com.dobeshadow.mineleaderboards.MineLeaderboardsPlugin
 api-version: '1.21'
 authors: ['DobeShadow']

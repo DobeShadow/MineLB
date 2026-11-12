@@ -27,14 +27,14 @@ Vault / PlaceholderAPI 全部通过反射调用，**不需要编译期依赖**�
 
 ```bash
 mvn clean package
-# 产物：target/MineLeaderboards-1.0.1.jar
+# 产物：target/MineLeaderboards-1.0.2.jar
 ```
 
 只依赖 `paper-api`（scope provided），不打包第三方库。
 
 ## 安装
 
-1. 将 `MineLeaderboards-1.0.1.jar` 放入服务器 `plugins/`
+1. 将 `MineLeaderboards-1.0.2.jar` 放入服务器 `plugins/`
 2. 启动服务器，生成 `plugins/MineLeaderboards/config.yml`
 3. 按服务器实际占位符名修改配置（尤其是 duel / signin）
 4. 由管理员手动重启或 `/mineleaderboards reload`（插件不会自己重启服务器）
@@ -64,18 +64,24 @@ mvn clean package
 - `leaderboard.boards.*.allow-offline`：默认 `false`，PAPI 榜只统计在线玩家。
   如果榜单人数不足 10，可改成 `true` 后用 `minelb test <board>` 验证扩展是否支持
   离线玩家查询；不支持时会返回未解析的 `%xxx%`，插件会自动丢弃
-- `leaderboard.heads.source`：默认 `auto`（内存 → 磁盘 → mc-heads.net）。
-  外网不通时可设 `none`，头像交给网页侧兜底
+- `leaderboard.heads.source`：默认 `none`（插件不下载头像，网页侧兜底）。
+  服务器能访问 mc-heads.net 时可改 `auto`（内存 → 磁盘 → 外网下载）。
+  **注意 `saveDefaultConfig()` 不会覆盖已有的 config.yml**，从旧版升级时要手动同步这一项
 
 ## 排查
 
-- 推送失败先看控制台日志里的 HTTP 状态码，成功是 **204**（不是 200）
+- 推送失败先看控制台日志里的 HTTP 状态码 **和响应体**，成功是 **204**（不是 200）
+- `HTTP 400 {"ok":false,"error":"invalid_json"}` = 推送的 JSON 非法。
+  1.0.2 已修复 `buildJson()` 每个 board 多关一个 `}` 导致 boards 被提前关闭的问题，
+  并在推送前加了括号配对自检；遇到 400 先确认不是旧版 jar
+- `HTTP 403 invalid_token` = token 不对；`405` = 用了 GET；`413` = 请求体超 512KB
 - 数据为空先用 `minelb test <board>` 确认数据源能否取到值
 - 占位符名不确定时，用 `/papi parse <玩家> %占位符%` 验证
-- 头像服务连续失败 3 次后，插件会跳过外网下载 60 秒，避免一轮推送卡死；
+- 头像服务连续失败 3 次后，插件会静默跳过外网下载 10 分钟，避免一轮推送卡死；
   此时前端会用自己的头像兜底
-- 卡在「上一次排行榜采集/推送尚未完成」时，看是不是 HTTP 超时；
-  插件有 5 分钟强制释放兜底
+- 手动 `minelb push` 撞上定时任务时的「跳过本轮」已降级为 fine 日志，不再刷屏
+- **endpoint 建议保持 `https://`**：实测 http 也能通，但 token 会明文过公网、
+  80 端口出方向不稳定；证书过期用 `skip-tls-verify: true` 处理，不要改用 http 绕过
 
 ## 与网页侧的契约
 

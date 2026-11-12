@@ -6,7 +6,7 @@
 
     <groupId>com.dobeshadow</groupId>
     <artifactId>MineLeaderboards</artifactId>
-    <version>1.0.1</version>
+    <version>1.0.2</version>
     <packaging>jar</packaging>
     <name>MineLeaderboards</name>
     <description>采集财富 / 在线时长 / 决斗积分 / 连续签到数据并推送到 MINEMC 排行榜</description>

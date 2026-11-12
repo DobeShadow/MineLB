@@ -111,7 +111,8 @@ public final class LeaderboardService {
                 logger.warning("上一次排行榜推送超时未释放，强制重置标志");
                 pushing.set(false);
             } else {
-                logger.warning("上一次排行榜采集/推送尚未完成，跳过本轮");
+                // 手动 push 与定时任务撞车属正常情况，降级为 fine，别刷屏
+                logger.fine("上一次排行榜采集/推送尚未完成，跳过本轮");
                 return;
             }
         }
@@ -157,12 +158,13 @@ public final class LeaderboardService {
             try {
                 List<BoardSnapshot> snapshots = buildSnapshots(raw, candidates);
                 String json = buildJson(snapshots);
-                int code = pusher.push(json);
-                if (code == 204) {
+                JsonPusher.Result result = pusher.push(json);
+                if (result.status() == 204) {
                     logger.info("排行榜推送成功 (HTTP 204, " + snapshots.size() + " 个榜, "
                             + json.getBytes(java.nio.charset.StandardCharsets.UTF_8).length + " 字节)");
                 } else {
-                    logger.warning("排行榜推送失败: HTTP " + code + " @ " + cfg.getEndpoint());
+                    logger.warning("排行榜推送失败: HTTP " + result.status()
+                            + " " + result.body() + " @ " + cfg.getEndpoint());
                 }
             } catch (Exception e) {
                 logger.warning("排行榜推送异常: " + describe(e));
@@ -235,10 +237,58 @@ public final class LeaderboardService {
                 sb.append(",\"value\":").append(formatNumber(e.value()));
                 sb.append(",\"head\":\"").append(escape(head)).append("\"}");
             }
-            sb.append("]}}");
+            // 只关闭 entries 数组 + 当前 board 对象；boards 对象要等循环结束才关
+            sb.append("]}");
         }
+        // 关闭 boards 对象 + 根对象
         sb.append("}}");
-        return sb.toString();
+
+        String json = sb.toString();
+        assertBalanced(json);
+        return json;
+    }
+
+    /**
+     * 手写拼接的 JSON 结构自检。
+     * <p>
+     * 曾经因为每个 board 多关了一个 '}'，把 boards 对象提前关闭，
+     * 生成非法 JSON，端点一直返回 400 invalid_json。
+     * 这里在推送前做一次括号/引号配对检查，宁可本轮失败也不要推烂数据。
+     */
+    private static void assertBalanced(String json) {
+        int objects = 0;
+        int arrays = 0;
+        boolean inString = false;
+        boolean escaped = false;
+        for (int i = 0; i < json.length(); i++) {
+            char ch = json.charAt(i);
+            if (inString) {
+                if (escaped) {
+                    escaped = false;
+                } else if (ch == '\\') {
+                    escaped = true;
+                } else if (ch == '"') {
+                    inString = false;
+                }
+                continue;
+            }
+            switch (ch) {
+                case '"' -> inString = true;
+                case '{' -> objects++;
+                case '}' -> objects--;
+                case '[' -> arrays++;
+                case ']' -> arrays--;
+                default -> {
+                }
+            }
+            if (objects < 0 || arrays < 0) {
+                throw new IllegalStateException("生成的 JSON 括号不匹配");
+            }
+        }
+        if (inString || objects != 0 || arrays != 0) {
+            throw new IllegalStateException("生成的 JSON 结构不完整 (objects="
+                    + objects + ", arrays=" + arrays + ")");
+        }
     }
 
     /**

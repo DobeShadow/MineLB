@@ -87,8 +87,10 @@ leaderboard:
       #   query: "SELECT streak FROM signin WHERE name = ?"
 
   heads:
-    # auto | online-only | mcheads | none
-    source: auto
+    # auto | online-only | none
+    # auto 会让插件从 mc-heads.net 下载头像；服务器若连不上外网，
+    # 设 none 可避免每轮白等下载超时，头像交给网页侧兜底
+    source: none
     # 头像磁盘缓存目录（相对插件数据目录）
     cache-dir: "heads"
     # 头像尺寸

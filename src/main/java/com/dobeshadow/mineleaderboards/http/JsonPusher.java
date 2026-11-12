@@ -74,12 +74,18 @@ public final class JsonPusher {
     }
 
     /**
+     * 推送结果：状态码 + 响应体（端点失败时会返回 {"ok":false,"error":"..."}）。
+     */
+    public record Result(int status, String body) {
+    }
+
+    /**
      * 推送 JSON 到排行榜端点。
      *
-     * @return HTTP 状态码
+     * @return HTTP 状态码与响应体
      * @throws Exception 网络异常或超时
      */
-    public int push(String json) throws Exception {
+    public Result push(String json) throws Exception {
         String endpoint = cfg.getEndpoint();
         String url = endpoint
                 + (endpoint.contains("?") ? "&" : "?")
@@ -94,6 +100,10 @@ public final class JsonPusher {
 
         HttpResponse<String> resp = http.send(req,
                 HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
-        return resp.statusCode();
+        String body = resp.body() == null ? "" : resp.body().trim();
+        if (body.length() > 200) {
+            body = body.substring(0, 200);
+        }
+        return new Result(resp.statusCode(), body);
     }
 }
