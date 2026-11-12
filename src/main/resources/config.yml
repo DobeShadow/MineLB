@@ -1,0 +1,92 @@
+# ============================================================
+# MineLeaderboards 配置文件
+# 配置结构版本，插件会校验此值，结构变更后请勿手动改小
+# ============================================================
+config-version: 1
+
+leaderboard:
+  # 是否启用排行榜采集
+  enabled: true
+
+  # 数据接收端点
+  endpoint: "https://www.minemc.asia/leaderboard-ingest.php"
+
+  # 端点 token（与 status-ingest.php 的不同，别混用）
+  token: "4ebd4c6b5d7a2c629393446d4e44cbdc174b933b0d73d330"
+
+  # 采集推送间隔（秒），最小 10
+  interval-seconds: 60
+
+  # HTTP 超时（秒）
+  timeout-seconds: 20
+
+  # 每个榜保留的条数（端点上限 20，前端显示前 10）
+  top-n: 10
+
+  # 候选玩家池上限
+  max-candidates: 400
+
+  # 只统计最近 N 天活跃过的玩家
+  active-within-days: 180
+
+  # 候选池来源：playerdata / online / extra
+  candidate-sources: [playerdata, online, extra]
+
+  # 额外加入候选池的玩家名
+  extra-players: []
+
+  # 跳过 TLS 证书校验
+  # 当前 www.minemc.asia 证书已过期，必须开启才能推送成功。
+  # 证书修复后请改回 false（开启时该链路不校验服务器证书，存在中间人风险）。
+  skip-tls-verify: true
+
+  boards:
+    # 财富榜（单位 ¥）
+    wealth:
+      enabled: true
+      provider: vault
+      # Vault 不可用时用 PAPI 占位符兜底（不带 %）
+      fallback-placeholder: "vault_eco_balance"
+
+    # 在线时长榜（单位 小时）
+    playtime:
+      enabled: true
+      provider: statistic
+      # Bukkit 统计接口不可用时，直接读 stats 文件兜底
+      fallback-stats-file: true
+      # 多世界合并方式：sum | max
+      multi-world: sum
+
+    # 决斗积分榜（单位 分）
+    duel:
+      enabled: true
+      provider: papi
+      # ASDuel 积分占位符（不带 %）
+      placeholder: "asduels_points"
+      # 该扩展是否支持离线玩家；false 时只统计在线玩家
+      allow-offline: false
+
+    # 签到榜（单位 次，注意网页侧标签写死为「天」）
+    signin:
+      enabled: true
+      # papi | yaml | sql
+      provider: papi
+      # LiteSignIn 签到总次数占位符（不带 %）
+      placeholder: "litesignin_statistics"
+      allow-offline: false
+      # yaml 方案示例：
+      # yaml:
+      #   path: "plugins/DailySign/players.yml"
+      #   key: "players.<name>.streak"
+      # sql 方案示例：
+      # sql:
+      #   jdbc-url: "jdbc:sqlite:plugins/DailySign/data.db"
+      #   query: "SELECT streak FROM signin WHERE name = ?"
+
+  heads:
+    # auto | online-only | mcheads | none
+    source: auto
+    # 头像磁盘缓存目录（相对插件数据目录）
+    cache-dir: "heads"
+    # 头像尺寸
+    size: 64
