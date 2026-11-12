@@ -1,7 +1,7 @@
 name: MineLeaderboards
-version: '1.0.0'
+version: '1.0.1'
 main: com.dobeshadow.mineleaderboards.MineLeaderboardsPlugin
-api-version: '1.20'
+api-version: '1.21'
 authors: ['DobeShadow']
 description: '定时采集服务器财富/在线时长/决斗积分/签到数据并推送到 MineMC 排行榜端点'
 softdepend: [Vault, PlaceholderAPI]

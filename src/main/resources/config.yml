@@ -62,17 +62,20 @@ leaderboard:
       enabled: true
       provider: papi
       # ASDuel 积分占位符（不带 %）
+      # 上线前用 /papi parse <玩家> %asduels_points% 验证
       placeholder: "asduels_points"
       # 该扩展是否支持离线玩家；false 时只统计在线玩家
+      # 若榜单人数不足 10，可改 true 后用 /minelb test duel 验证扩展是否支持离线查询
       allow-offline: false
 
-    # 签到榜（单位 次，注意网页侧标签写死为「天」）
+    # 连续签到榜（单位 天，与网页侧「连续签到榜 / 天」一致）
     signin:
       enabled: true
       # papi | yaml | sql
       provider: papi
-      # LiteSignIn 签到总次数占位符（不带 %）
-      placeholder: "litesignin_statistics"
+      # LiteSignIn 当前连续签到次数占位符（不带 %）
+      # 注意 %litesignin_statistics% 是累计总次数，不是连续天数
+      placeholder: "litesignin_continuous"
       allow-offline: false
       # yaml 方案示例：
       # yaml:
